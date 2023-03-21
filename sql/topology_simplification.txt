@@ -7,9 +7,12 @@
 --SELECT * FROM pg_available_extensions;
 --CREATE EXTENSION postgis_topology ;
 
+--SELECT * FROM pg_available_extensions;
+--CREATE EXTENSION postgis_topology ;
+
 
 -- Create the topo_qc schema
-select DropTopology('topo_qc')
+select DropTopology('topo_qc');
 select CreateTopology('topo_qc', 3347, 0);
 
 -- Populate the edge, node, face and relation tables in topo_qc based on a (buffered) public.qc_city_test_tbl geom
@@ -21,7 +24,7 @@ select AddTopoGeometryColumn('topo_qc', 'public', 'qc_city_test_tbl', 'topogeom'
 
 -- Populate the topo geometry
 UPDATE public.qc_city_test_tbl 
-SET topogeom = toTopoGeom(st_transform("GEOMETRY", 3347), 'topo_qc', 1)
+SET topogeom = toTopoGeom(st_transform("GEOMETRY", 3347), 'topo_qc', 1);
 
 -- Function for edge simplification with topological constraints
 -- https://gist.github.com/JamesSaxon/7bd0f46c35a6b8eca864756419eec30d
@@ -54,14 +57,14 @@ END
 $$ LANGUAGE 'plpgsql' STABLE STRICT;
 
 
--- Call the custom function with the edge data
-SELECT SimplifyEdgeGeom('topo_qc', edge_id, 10000) 
+-- Call the custom simplification function with the edge data
+SELECT SimplifyEdgeGeom('topo_qc', edge_id, 500) 
 FROM topo_qc.edge_data;
 
 
+-- Create a new column with the simplified geometry
+ALTER TABLE public.qc_city_test_tbl ADD geomsimp GEOMETRY;
 
-UPDATE public.qc_city_test_tbl 
-SET topogeom = toTopoGeom(geom,'topo_qc', 1) 
-
+-- Populate the new column
 UPDATE public.qc_city_test_tbl 
 SET geomsimp = topogeom::geometry;
