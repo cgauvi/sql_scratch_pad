@@ -1,0 +1,52 @@
+drop function if exists public.mvt_geom_from_point; 
+
+CREATE OR REPLACE
+FUNCTION public.mvt_geom_from_point( z integer, x integer, y integer,
+									tbl_name varchar default 'public.qc_city_test_tbl' , 
+									geom_col_name varchar default  '"GEOMETRY"',
+									click_lon float8 default -71.3449155,
+									click_lat float8 default 46.8571419,
+									radius float8 default 100)
+RETURNS geometry
+AS $$
+DECLARE
+  sql_cmd varchar;
+  res geometry;
+BEGIN
+	sql_cmd :=  '
+	WITH trans_geom_tbl AS (
+		SELECT ST_Transform(' || geom_col_name || ', 3857) as proj_geom
+		FROM ' || tbl_name || ' 
+	)
+	
+	SELECT 
+		ST_AsMVTGeom( 
+				ST_Intersection( 
+					trans_geom_tbl.proj_geom , 
+					ST_Buffer(args.click, args.radius_param )
+					),
+			args.bounds) AS geom
+	  FROM  
+			public.mvt_params_from_point(' || z || ', ' || x || ',' || y || ',' || click_lon || ',' || click_lat || ',' || radius || ') as args
+			, trans_geom_tbl
+	  WHERE  
+			ST_Intersects(
+				trans_geom_tbl.proj_geom,
+				args.bounds
+			) 
+	  AND  
+			ST_DWithin(
+				trans_geom_tbl.proj_geom, 
+				args.click , args.radius_param 
+			); 
+	';	
+	RAISE NOTICE 'SQL Code: (%)', sql_cmd;
+	EXECUTE sql_cmd INTO res;
+	RETURN res;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+
+COMMENT ON FUNCTION public.mvt_geom_from_point IS E'From a given point of coordinates ( click_lon, click_lat ) and a given radius, return all features (geometry) intersecting this circle, with a geometry cut at the corresponding radius.'

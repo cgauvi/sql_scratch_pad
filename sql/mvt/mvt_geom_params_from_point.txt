@@ -1,0 +1,24 @@
+
+CREATE OR REPLACE
+FUNCTION public.mvt_params_from_point( z integer, x integer, y integer,
+                click_lon float8 default -71.3449155,
+                click_lat float8 default 46.8571419,
+                radius float8 default 100)
+RETURNS table (bounds geometry, click geometry, buffer geometry, radius_param float8)
+AS $$
+DECLARE
+BEGIN
+	RETURN QUERY 
+	 SELECT 
+		ST_TileEnvelope( z , x, y) AS bounds, 
+		ST_Transform(ST_SetSRID(ST_MakePoint(click_lon, click_lat), 4326), 3857) AS click ,
+		ST_Buffer(ST_Transform(ST_SetSRID(ST_MakePoint(click_lon, click_lat), 4326), 3857), radius) as buffer,
+		radius as radius_param;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+									
+									
+COMMENT ON FUNCTION public.mvt_params_from_point IS E'From a given point of coordinates ( click_lon, click_lat) + buffer : create a table with all params for algo.'

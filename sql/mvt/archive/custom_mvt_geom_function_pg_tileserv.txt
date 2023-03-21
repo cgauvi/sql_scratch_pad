@@ -1,0 +1,110 @@
+
+-- adapted from https://pad.oslandia.net/HDWmZxwFR3mBVmIKnDylGQ#Part-5--PostGIS-and-pg_tileserv
+
+drop function drop function if exists  public.mvt_from_point;
+
+CREATE OR REPLACE
+FUNCTION public.mvt_from_point(
+                z integer, x integer, y integer,
+				tbl_name varchar default 'public.qc_city_test_tbl',
+				geom_col_name varchar default '"GEOMETRY"',
+                click_lon float8 default -71.3449155,
+                click_lat float8 default 46.8571419,
+                radius float8 default 100)
+RETURNS bytea
+AS $$
+DECLARE
+  sql_cmd varchar;
+  res bytea;
+BEGIN
+	sql_cmd :=  'WITH 
+	args AS ( 
+	  SELECT 
+		ST_TileEnvelope(' || z || ', ' || x || ',' || y || ') AS bounds, 
+		ST_Transform(ST_SetSRID(ST_MakePoint(' || click_lon || ',' || click_lat || '), 4326), 3857) AS click 
+	), 
+	transf_tbl as (
+		SELECT ST_Transform( ' || geom_col_name || ', 3857) as proj_geom
+		FROM ' || tbl_name  ||
+	'),
+	mvtgeom AS ( 
+	  SELECT 
+		ST_AsMVTGeom( 
+				ST_Intersection( 
+					transf_tbl.proj_geom , 
+					ST_Buffer(args.click, ' || radius || ')
+					),
+			args.bounds) AS geom
+	  FROM  
+			transf_tbl , args 
+	  WHERE  
+			ST_Intersects(
+				transf_tbl.proj_geom,
+				args.bounds
+			) 
+	  AND  
+			ST_DWithin(
+				transf_tbl.proj_geom , ' ||
+				args.click || ', ' || radius || 
+			') 
+	) 
+	SELECT ST_AsMVT(mvtgeom, ' || '''' || tbl_name || '''' || ') FROM mvtgeom 
+	';
+	RAISE NOTICE 'SQL Code: (%)', sql_cmd;
+	EXECUTE sql_cmd INTO res;
+	RETURN res;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+
+COMMENT ON FUNCTION public.mvt_from_point IS E'From a given point of coordinates ( click_lon, click_lat ) and a given radius, return a MVT intersecting this circle, with a geometry cut at the corresponding radius.';
+
+
+
+
+-- adapted from https://pad.oslandia.net/HDWmZxwFR3mBVmIKnDylGQ#Part-5--PostGIS-and-pg_tileserv
+
+drop function if exists  public.mvt_from_point;
+
+CREATE OR REPLACE
+FUNCTION public.mvt_from_point(
+                z integer, x integer, y integer,
+				tbl_name varchar default 'public.qc_city_test_tbl',
+				geom_col_name varchar default '"GEOMETRY"',
+                click_lon float8 default -71.3449155,
+                click_lat float8 default 46.8571419,
+                radius float8 default 100)
+RETURNS bytea
+AS $$
+DECLARE
+  sql_cmd varchar;
+  res bytea;
+BEGIN
+	sql_cmd :=  'WITH 
+	mvtgeom AS ( 
+	  SELECT 
+		 public.mvt_geom_from_point( '  || 
+                z || ', ' ||
+				x || ', ' ||
+				y || ', ' ||
+				tbl_name || ', ' ||
+				geom_col_name || ', ' ||
+                click_lon || ', ' || ||
+                click_lat || ', ' ||
+                radius || 
+		')
+	) 
+	SELECT ST_AsMVT(mvtgeom, ' || '''' || tbl_name || '''' || ') FROM mvtgeom 
+	';
+	RAISE NOTICE 'SQL Code: (%)', sql_cmd;
+	EXECUTE sql_cmd INTO res;
+	RETURN res;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+
+COMMENT ON FUNCTION public.mvt_from_point IS E'From a given point of coordinates ( click_lon, click_lat ) and a given radius, return a MVT intersecting this circle, with a geometry cut at the corresponding radius.';

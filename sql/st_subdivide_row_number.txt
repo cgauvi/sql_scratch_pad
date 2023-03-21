@@ -1,0 +1,21 @@
+
+select row_number() over() as row, geometry, st_astext(geometry)
+from
+(
+	select 
+	st_subdivide(
+		ST_CollectionExtract(
+			(
+				st_dump(
+					st_union(
+						st_transform(
+							st_buffer(st_transform("GEOMETRY", 3347),1)
+							, 4326
+						)
+					)
+				)
+			).geom 
+		)
+	)::geometry as geometry
+	from public.qc_city_test_tbl
+) as sub
