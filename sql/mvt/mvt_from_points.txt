@@ -9,35 +9,31 @@ FUNCTION public.mvt_from_point( z integer, x integer, y integer,
 RETURNS bytea
 AS $$
 DECLARE
-  sql_cmd varchar;
   res bytea;
 BEGIN
-	sql_cmd :=  'WITH 
+	WITH 
 	mvtgeom AS ( 
-	  SELECT 
-		 public.mvt_geom_from_point( '  || 
-                z || ', ' ||
-				x || ', ' ||
-				y || ', ' ||
-				tbl_name || ', ' ||
-				geom_col_name || ', ' ||
-                click_lon || ', ' || ||
-                click_lat || ', ' ||
-                radius || 
-		')
+	  SELECT st_asmvtgeom(geom_tbl_point.geom, args.bounds)
+		from 
+		public.mvt_geom_from_point(
+			 z, x, y,
+			 tbl_name,
+			 geom_col_name,
+			 click_lon,
+			 click_lat,
+			 radius  
+		) as geom_tbl_point, 
+		public.mvt_params_from_point(z,x,y ,click_lon , click_lat , radius ) as args 
 	) 
-	SELECT ST_AsMVT(mvtgeom, ' || '''' || tbl_name || '''' || ') 
-	INTO res 
-	FROM mvtgeom 
-	';
-	RAISE NOTICE 'SQL Code: (%)', sql_cmd;
-	EXECUTE sql_cmd;
+	SELECT ST_AsMVT(mvtgeom.*)
+	INTO RES
+	FROM mvtgeom;
+
 	RETURN res;
 END;
 $$
 LANGUAGE 'plpgsql'
 STABLE
 PARALLEL SAFE;
-									
 									
 COMMENT ON FUNCTION public.mvt_params_from_point IS E'From a given point of coordinates ( click_lon, click_lat) + buffer : return a mvt'

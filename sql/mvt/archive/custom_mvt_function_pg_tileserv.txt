@@ -1,7 +1,7 @@
 
 -- adapted from https://pad.oslandia.net/HDWmZxwFR3mBVmIKnDylGQ#Part-5--PostGIS-and-pg_tileserv
 
-drop function if exists  public.mvt_from_point;
+drop function public.mvt_from_point;
 
 CREATE OR REPLACE
 FUNCTION public.mvt_from_point(
@@ -18,18 +18,28 @@ DECLARE
   res bytea;
 BEGIN
 	sql_cmd :=  'WITH 
+	args AS ( 
+	  SELECT 
+		ST_TileEnvelope(' || z || ', ' || x || ',' || y || ') AS bounds, 
+		ST_Transform(ST_SetSRID(ST_MakePoint(' || click_lon || ',' || click_lat || '), 4326), 3857) AS click 
+	), 
 	mvtgeom AS ( 
 	  SELECT 
-		 public.mvt_geom_from_point( '  || 
-                z || ', ' ||
-				x || ', ' ||
-				y || ', ' ||
-				tbl_name || ', ' ||
-				geom_col_name || ', ' ||
-                click_lon || ', ' || ||
-                click_lat || ', ' ||
-                radius || 
-		')
+		ST_AsMVTGeom( 
+				ST_Intersection( 
+					ST_Transform( p.' || geom_col_name || ', 3857), 
+					ST_Buffer(args.click, ' || radius || ')
+					),
+			args.bounds) AS geom, 
+		p.id 
+	  FROM  
+			' || tbl_name  || ' p 
+			, args 
+	  WHERE  
+			ST_Intersects(p.' || geom_col_name || ', ST_Transform(args.bounds, 3857)) 
+	  AND  
+			ST_DWithin(p.' || geom_col_name || ', args.click, ' || radius || ') 
+	  LIMIT 10000 
 	) 
 	SELECT ST_AsMVT(mvtgeom, ' || '''' || tbl_name || '''' || ') FROM mvtgeom 
 	';
@@ -42,4 +52,4 @@ LANGUAGE 'plpgsql'
 STABLE
 PARALLEL SAFE;
 
-COMMENT ON FUNCTION public.mvt_from_point IS E'From a given point of coordinates ( click_lon, click_lat ) and a given radius, return a MVT intersecting this circle, with a geometry cut at the corresponding radius.';
+COMMENT ON FUNCTION public.mvt_from_point IS E'From a given point of coordinates ( click_lon, click_lat ) and a given radius, return all features intersecting this circle, with a geometry cut at the corresponding radius.';
