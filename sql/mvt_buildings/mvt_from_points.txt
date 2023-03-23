@@ -1,0 +1,34 @@
+
+CREATE OR REPLACE
+FUNCTION public.mvt_from_point( z integer, x integer, y integer,
+								tbl_name varchar default 'public.building_footprints_open_data' , 
+								tbl_name_rnd varchar default 'public.building_footprints_open_data_rnd' , 
+								geom_col_name varchar default  '"geom"')
+RETURNS bytea
+AS $$
+DECLARE
+  res bytea;
+BEGIN
+	WITH 
+	mvtgeom AS ( 
+	  SELECT st_asmvtgeom(geom_tbl_point.geom, ST_TileEnvelope(z, x, y))
+		from 
+		public.mvt_geom_from_point(
+			 	z, x, y,
+			 	tbl_name,
+				tbl_name_rnd,
+			 	geom_col_name
+		) as geom_tbl_point
+	) 
+	SELECT ST_AsMVT(mvtgeom.*)
+	INTO RES
+	FROM mvtgeom;
+
+	RETURN res;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+									
+COMMENT ON FUNCTION public.mvt_params_from_point IS E'From based on the zoom level, return a mvt with either all features (geometry) in a given tile enveloppe or a random subset of these.'
