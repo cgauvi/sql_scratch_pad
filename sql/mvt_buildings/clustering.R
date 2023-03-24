@@ -28,7 +28,7 @@ shp_cluster <- sf::st_read(
   query =  glue::glue(
     "SELECT ST_ClusterKMeans(st_centroid(geom), 10) OVER() AS cid, st_centroid(geom) as geom, table_orig
     FROM public.building_footprints_open_data
-	limit 1000 "
+	limit 10000 "
   ),
   geometry_column ='geom'
 )

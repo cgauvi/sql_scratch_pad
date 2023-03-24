@@ -1,0 +1,8 @@
+drop table if exists public.building_footprints_open_data_rnd;
+
+create table public.building_footprints_open_data_rnd as
+(
+SELECT gid, table_orig, ST_Transform("geom", 3857) as geom
+from public.building_footprints_open_data
+order by random()
+);

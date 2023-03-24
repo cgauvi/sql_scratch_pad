@@ -1,0 +1,28 @@
+select *
+    from public.mvt_geom_from_point(14, 4844, 5853);
+select *
+    from public.mvt_from_point(14, 4844, 5853);
+		
+select *
+    from public.mvt_geom_from_geohash(14, 4844, 5853);	
+
+	
+	
+select *
+    from public.mvt_geom_from_point(8,77,90);
+select *
+    from public.mvt_from_point(8,77,90);
+select *
+    from public.mvt_geom_from_geohash(14, 4844, 5853);		
+	
+select *
+    from public.mvt_geom_from_point(2,1,1);
+select *
+    from public.mvt_from_point(2,1,1);	
+	
+	
+select *
+    from public.mvt_geom_from_point(20,316480,369664);
+	
+select *
+    from public.mvt_from_point(20,316480,369664);

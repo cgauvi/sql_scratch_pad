@@ -2,35 +2,55 @@ drop function if exists public.mvt_geom_from_point;
 
 CREATE OR REPLACE
 FUNCTION public.mvt_geom_from_point( z integer, x integer, y integer,
-				tbl_name varchar default 'public.building_footprints_open_data' , 
-				tbl_name_rnd varchar default 'public.building_footprints_open_data_rnd' , 					
-				geom_col_name varchar default  '"geom"')
+				tbl_name_proj_rnd varchar default 'public.building_footprints_open_data_rnd' , 					
+				geom_col_name varchar default  'geom',
+				max_zoom integer default 13,
+				min_zoom integer default 6)
 RETURNS table (geom geometry)
 AS $$
 DECLARE
  	sql_cmd varchar;
-	tbl_used varchar;
+	lim integer;
 BEGIN
-	IF Z > 10 then
-		tbl_used := tbl_name;
-	ELSE
-		tbl_used := tbl_name_rnd;
-	END IF;
+
 	
-	sql_cmd :=  '
-	WITH trans_geom_tbl AS (
-		SELECT ST_Transform(' || geom_col_name || ', 3857) as proj_geom
-		FROM ' || tbl_used || ' 
-	)
+	if z >= max_zoom then
+		lim := POWER(10,8); -- no effective limit
+
+		sql_cmd :=  '
+		SELECT 
+			ST_Intersection( ' ||
+						geom_col_name || ', 
+						ST_TileEnvelope( ' || z || ',' || x || ',' || y || ') 
+						) AS geom
+		  FROM  
+				 '  || tbl_name_proj_rnd || '
+		  WHERE ST_Intersects(  ' ||
+						geom_col_name || ', 
+						ST_TileEnvelope( ' || z || ',' || x || ',' || y || ') 
+						)
+		  LIMIT ' ||  lim || ';'
+		;	
+
+	else  
+		lim := GREATEST( 200, POWER(2, z)); -- 2**10 ~ 1024
+
+		sql_cmd :=  '
+		SELECT 
+			ST_Intersection( ST_Envelope ( ' ||
+						geom_col_name || '), 
+						ST_TileEnvelope( ' || z || ',' || x || ',' || y || ') 
+						) AS geom
+		  FROM  
+				 '  || tbl_name_proj_rnd || '
+		  WHERE ST_Intersects(  ' ||
+						geom_col_name || ', 
+						ST_TileEnvelope( ' || z || ',' || x || ',' || y || ') 
+						)
+		  LIMIT ' ||  lim || ';'
+		;	
+	end if;
 	
-	SELECT 
-		ST_Intersection( 
-					trans_geom_tbl.proj_geom , 
-					ST_TileEnvelope( z , x, y) 
-					) AS geom
-	  FROM  
-			 trans_geom_tbl
-	';	
 	
 	RAISE NOTICE 'SQL Code: (%)', sql_cmd;
  
