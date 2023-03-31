@@ -12,7 +12,7 @@ DECLARE
 BEGIN
 	WITH 
 	mvtgeom AS ( 
-	  SELECT st_asmvtgeom(geom_tbl_point.geom, ST_TileEnvelope(z, x, y))
+	  SELECT st_asmvtgeom(geom_tbl_point.geom, ST_TileEnvelope(z, x, y)), table_orig, num_buildings
 		from 
 		public.mvt_geom_from_geohash(
 			 	z, x, y,

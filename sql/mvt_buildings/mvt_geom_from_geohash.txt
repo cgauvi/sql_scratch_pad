@@ -6,7 +6,7 @@ FUNCTION public.mvt_geom_from_geohash( z integer, x integer, y integer,
 				geom_col_name varchar default  'geom',
 				max_zoom integer default 13,
 				min_zoom integer default 4)
-RETURNS table (geom geometry)
+RETURNS table (geom geometry, table_orig varchar, num_buildings integer)
 AS $$
 DECLARE
  	sql_cmd varchar;
@@ -19,9 +19,9 @@ BEGIN
 
 		sql_cmd :=  '
 		SELECT 
-			ST_Intersection( ' || geom_col_name || ',
+			 ST_MakeValid( ST_Intersection( ' || geom_col_name || ',
 						ST_TileEnvelope( ' || z || ',' || x || ',' || y || ') 
-						) AS geom
+						) ) AS geom, table_orig, 1::integer as num_buildings
 		  FROM  
 				 '  || tbl_name_proj || '
 		  WHERE ST_Intersects(  ' || geom_col_name || ', 
@@ -52,7 +52,7 @@ BEGIN
 			SELECT 
 				ST_Intersection( geom,  
 							ST_TileEnvelope( ' || z || ',' || x || ',' || y || ') 
-							) AS geom
+							) AS geom, ''NA''::varchar as table_orig , num_buildings
 			  FROM  
 				' ||	tbl_name_proj || '_geo_' || geohash_prec  || '
 			  WHERE ST_Intersects( geom , 

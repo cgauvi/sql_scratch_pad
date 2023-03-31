@@ -33,10 +33,10 @@ BEGIN
 				3857) as geom
 			from '  || tbl_name || '
 		)
-		select count(*) as num, geom, geohash
+		select count(*) as num_buildings, geom, geohash
 		from geohash_tbl
 		group by geom, geohash
-		order by num desc
+		order by num_buildings desc
 	);';
 	
 		
@@ -52,11 +52,11 @@ PARALLEL SAFE;
 COMMENT ON FUNCTION public.create_agg_geohash_tbl IS E'Aggregate features at a given geohash level';
  
 --- # Create the tables
-drop table if exists public.building_footprints_open_data_geo_7;
-drop table if exists public.building_footprints_open_data_geo_6;
-drop table if exists public.building_footprints_open_data_geo_3;
-drop table if exists public.building_footprints_open_data_geo_4;
-drop table if exists public.building_footprints_open_data_geo_5;
+drop table if exists public.building_footprints_open_data_proj_geo_7;
+drop table if exists public.building_footprints_open_data_proj_geo_6;
+drop table if exists public.building_footprints_open_data_proj_geo_3;
+drop table if exists public.building_footprints_open_data_proj_geo_4;
+drop table if exists public.building_footprints_open_data_proj_geo_5;
 
 select public.create_agg_geohash_tbl(6);
 select public.create_agg_geohash_tbl(7);
@@ -67,7 +67,7 @@ select public.create_agg_geohash_tbl(3);
 drop table if exists public.building_footprints_open_data_proj;
 create table public.building_footprints_open_data_proj as
 (
-select ST_Transform( geom ,3857) as geom, gid, table_orig
+select ST_MakeValid(ST_Transform( geom ,3857)) as geom, gid, table_orig
 from public.building_footprints_open_data
 );
  
