@@ -1,0 +1,7 @@
+drop table if exists public.gic_geo_role_eval_cleaned_pc_adm_da_proj;
+create table public.gic_geo_role_eval_cleaned_pc_adm_da_proj as
+(
+select ST_MakeValid(ST_Transform( "GEOMETRY" ,3857)) as geom, *
+from public.gic_geo_role_eval_cleaned_pc_adm_da
+order by RANDOM ()
+);

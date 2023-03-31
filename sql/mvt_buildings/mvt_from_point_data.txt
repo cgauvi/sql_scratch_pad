@@ -1,0 +1,34 @@
+drop function if exists public.mvt_from_point_data; 
+
+
+CREATE OR REPLACE
+FUNCTION public.mvt_from_point_data( z integer, x integer, y integer,
+									tbl_name_proj varchar default 'public.gic_geo_role_eval_cleaned_pc_adm_da_proj' , 					
+									geom_col_name varchar default  'geom')
+RETURNS bytea
+AS $$
+DECLARE
+  res bytea;
+BEGIN
+	WITH 
+	mvtgeom AS ( 
+	  SELECT st_asmvtgeom(geom_tbl_point.geom, ST_TileEnvelope(z, x, y)), *
+		from 
+		public.mvt_geom_from_point_data(
+			 	z, x, y,
+				tbl_name_proj,
+			 	geom_col_name
+		) as geom_tbl_point
+	) 
+	SELECT ST_AsMVT(mvtgeom.*)
+	INTO RES
+	FROM mvtgeom;
+
+	RETURN res;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+									
+COMMENT ON FUNCTION public.mvt_from_point_data IS E'From based on the zoom level, return a mvt with either all features (geometry) in a given tile enveloppe or a random subset of these FOR POINT DATA.'
