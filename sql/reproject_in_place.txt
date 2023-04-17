@@ -1,0 +1,4 @@
+ ALTER TABLE {tbl_name} 
+  ALTER COLUMN geom 
+  TYPE Geometry(MULTIPOLYGON, 3347) 
+  USING ST_Transform(geom, 3347);
