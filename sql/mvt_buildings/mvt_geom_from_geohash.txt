@@ -52,7 +52,7 @@ BEGIN
 			SELECT 
 				ST_Intersection( geom,  
 							ST_TileEnvelope( ' || z || ',' || x || ',' || y || ') 
-							) AS geom, ''NA''::varchar as table_orig , num_buildings
+							) AS geom, ''NA''::varchar as table_orig , num_buildings::integer
 			  FROM  
 				' ||	tbl_name_proj || '_geo_' || geohash_prec  || '
 			  WHERE ST_Intersects( geom , 

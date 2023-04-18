@@ -36,13 +36,13 @@ deg2num<-function(lat_deg, lon_deg, zoom){
   #  return(paste(paste("https://a.tile.openstreetmap.org", zoom, xtile, ytile, sep="/"),".png",sep=""))
 }
 
-zoom_level <- 20
+zoom_level <- 8
 lat <- 46.8
 lon <- -71.3449155
 xy <- deg2num(lat, lon, zoom_level)
 
 string_params <- paste0(zoom_level, ',' , paste0(xy, collapse = ','), collapse = '')
-
+string_params2 <- paste0(zoom_level, '/' , paste0(xy, collapse = '/'), collapse = '')
 
 shp_tile_env <- sf::st_read(
   dsn = conn,
