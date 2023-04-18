@@ -1,0 +1,8 @@
+GRANT select on postgisftw.gic_geo_muni_proj to generic_ro_user;
+    
+ALTER TABLE postgisftw.gic_geo_muni_proj  
+ALTER COLUMN geom_transformed type geometry(MultiPolygon, 3857) using ST_Multi(geom_transformed);
+
+
+    ALTER TABLE  postgisftw.gic_geo_role_eval_cleaned_pc_adm_da_proj
+   ALTER COLUMN geom type geometry(Point, 3347) using geom;
