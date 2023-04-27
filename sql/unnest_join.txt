@@ -1,0 +1,15 @@
+with grouped_loc as (
+	select array_agg(id_provinc) as ll ,count(*) as num_geocode, ST_X(geom) as lng , ST_Y(geom) as lat , sum(num_dwellings) as num_dwellings
+	FROM  	public.gic_geo_role_eval_cleaned_pc_adm_da
+	where code_utilisation_descr = 'Maison pour personnes retraitées autonomes'
+	GROUP BY lng, lat
+	)
+select *
+from public.gic_geo_role_eval_cleaned_pc_adm_da s
+join
+(
+	select unnest(ll) as id_provinc
+	from grouped_loc
+	where num_geocode > 2
+) sub 
+on sub.id_provinc = s.id_provinc
