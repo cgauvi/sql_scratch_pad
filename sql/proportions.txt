@@ -1,0 +1,24 @@
+
+with total as (
+	select sum((num_dwellings > 0)::int) as num_rows_dwells
+	from public.gic_geo_role_eval_cleaned_pc_adm_da 
+), 
+classified as (
+	select 
+	total.num_rows_dwells, 
+	(case when (num_condo_dwellings> 0) then 'condo'  
+	when (num_apartement_dwellings> 0)then 'apt'
+	when (num_singles_dwellings> 0)then 'singles'  
+	when (num_other_dwellings> 0)then  'other'
+    when  (num_retirement_dwellings> 0)then 'retire'
+	when (num_holiday_dwellings> 0)then 'holiday'
+	when (num_mobile_home_dwellings)> 0 then 'mobile'
+	else 'na' 
+	end) as dwell_class
+	from public.gic_geo_role_eval_cleaned_pc_adm_da, total
+	where num_dwellings > 0
+)
+	select count(*)::float/num_rows_dwells::float as prop, count(*) as num, dwell_class, num_rows_dwells
+	from classified
+	group by dwell_class, num_rows_dwells
+	order by prop desc
